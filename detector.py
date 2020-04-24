@@ -1,13 +1,12 @@
 import os
 import collections
 import re
+import math
 
 def main():
-    # print("Hello")
     readFile()
 
 def readFile():
-    # print("Hello1")
     HamDict = {}
     SpamDict = {}
     hamCounter =0
@@ -18,7 +17,6 @@ def readFile():
     for file in files:
         # print(file)
         if "ham" in file:
-            # print("yes")
             hamCounter = hamCounter + 1
             f=open(os.path.join(your_path,file),'r')
             for line in f:
@@ -65,15 +63,16 @@ def bagsProbabilty(hamDic, spamDic, hamCounter, spamCounter):
     uniqueWords= 0
     totalFiles = hamCounter + spamCounter
 
+
     # total words in ham and spam training set
     for word in hamDic:
         if word not in spamDic:
             uniqueWords = uniqueWords + 1
 
     uniqueWords = uniqueWords + len(spamDic)
-    print("uniqueword :", uniqueWords)   
-    print("hamDic: ", len(hamDic))
-    print("spamDic: ", len(spamDic))
+    # print("uniqueword :", uniqueWords)   
+    # print("hamDic: ", len(hamDic))
+    # print("spamDic: ", len(spamDic))
     for length in hamDic:
         hamLen = hamLen + hamDic[length]
         
@@ -107,12 +106,83 @@ def bagsProbabilty(hamDic, spamDic, hamCounter, spamCounter):
             dataStr = dataStr + data +"  "+str(spamDic[data])+ "  "+str(spamProb[data])+ "  " + "0" + "  " + str(temp)
             moduleArray.append(dataStr) 
     
-    print("total data set: ",len(moduleArray) )
+    # print("total data set: ",len(moduleArray) )
     for i, data in enumerate(moduleArray):
         j = i + 1
         result = str(j) + "  " + data
         moduleFile.write(result+"\n")
 
     moduleFile.close()
+    # print("hamPRob: ", hamProb)
+    # print("spamProb: ", spamProb)
+    testModule(hamProb, spamProb, hamCounter, spamCounter, totalFiles, spamLen, hamLen, uniqueWords)
+
+    
+def testModule(hamProb, spamProb, hamCounter, spamCounter, totalFiles, spamLen, hamLen, uniqueWords):
+    your_path = './data/test'
+    files = os.listdir(your_path)
+    testResult = []
+    testFileCounter = 0
+
+    for file in files:
+        testFileCounter = testFileCounter + 1
+        # print(file)
+        spamFileProb = 0 
+        hamFileProb = 0 
+        # print("spamLen", spamLen)
+        spamFileProb = spamFileProb + math.log10(spamCounter/totalFiles)
+        hamFileProb = hamFileProb + math.log10(hamCounter/totalFiles)
+        # print("spamFileProb", spamFileProb)
+        # print("hamFileProb", hamFileProb)
+
+        if "txt" in file:
+            # print("yes")
+            # hamCounter = hamCounter + 1
+            f=open(os.path.join(your_path,file),'r')
+            for line in f:
+                line = re.sub('[^a-z\s]+',' ',line, flags=re.IGNORECASE)
+                line = re.sub('(\s+)',' ',line)
+                line = re.split(' ',line)
+                # print(line)
+                for word in line:
+                    if word in hamProb:
+                        # print(word," is ", y)
+                        hamFileProb = hamFileProb + math.log10(hamProb[word])
+                    else:
+                        hamX = 0.5 / (hamLen + (uniqueWords * 0.5))
+                        hamFileProb = hamFileProb + math.log10(hamX)
+
+                    if word in spamProb:
+                        # print(word, "is ", math.log10(spamProb[word]))
+                        spamFileProb = spamFileProb + math.log10(spamProb[word])
+                    else:
+                        spamX = 0.5 / (spamLen + (uniqueWords * 0.5))
+                        # print(word, "is ", math.log10(spamX))
+                        spamFileProb = spamFileProb + math.log10(spamX)
+
+                # print(result)        
+                                 
+            f.close()    
+        # print("hamfilePRob:", hamFileProb)
+        # print("spamFileProb:", spamFileProb)    
+        fileStatus = ""
+        flag = ""
+        if hamFileProb > spamFileProb:
+            fileStatus = "ham"
+            flag = "right"
+        else:
+            fileStatus = "spam"
+            flag = "wrong"
+
+        result = file + "  " + fileStatus + "  " +str(round(hamFileProb, 5)) + "  " + str(round(spamFileProb,5)) + "  "+ "ham" + "  " + flag
+        testResult.append(result)
+
+    outputFile = open("./data/output/result.txt", "w+")
+    for i, data in enumerate(testResult):
+        j = i + 1
+        # print(str(j)+ "  " + data)
+        outputFile.write(str(j)+ "  " + data+"\n")
+
+    outputFile.close()    
 
 main()
