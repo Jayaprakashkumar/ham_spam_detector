@@ -15,15 +15,13 @@ def readFile():
     files = os.listdir(your_path)
 
     for file in files:
-        # print(file)
         if "ham" in file:
             hamCounter = hamCounter + 1
-            f=open(os.path.join(your_path,file),'r')
+            f=open(os.path.join(your_path,file),'r',encoding="utf8", errors="surrogateescape")
             for line in f:
                 line = re.sub('[^a-z\s]+',' ',line, flags=re.IGNORECASE)
                 line = re.sub('(\s+)',' ',line)
                 line = re.split(' ',line)
-                # print(line)
                 for word in line:
                     if len(word) > 0:
                         if word.lower() in HamDict:
@@ -32,17 +30,14 @@ def readFile():
                             HamDict[word.lower()] = 1
                          
             f.close()
-            # print(HamDict)
 
         if "spam" in file:
-            # print("yes")
             spamCounter = spamCounter + 1
-            f=open(os.path.join(your_path,file),'r')
+            f=open(os.path.join(your_path,file),'r',encoding="utf8", errors="surrogateescape")
             for line in f:
                 line = re.sub('[^a-z\s]+',' ',line, flags=re.IGNORECASE)
                 line = re.sub('(\s+)',' ',line)
                 line = re.split(' ',line)
-                # print(line)
                 for word in line:
                     if len(word) > 0:
                         if word.lower() in SpamDict:
@@ -50,7 +45,6 @@ def readFile():
                         else:
                             SpamDict[word.lower()] = 1
             f.close()
-            # print(SpamDict)
     bagsProbabilty(HamDict,SpamDict,hamCounter, spamCounter)        
 
 
@@ -63,16 +57,12 @@ def bagsProbabilty(hamDic, spamDic, hamCounter, spamCounter):
     uniqueWords= 0
     totalFiles = hamCounter + spamCounter
 
-
     # total words in ham and spam training set
     for word in hamDic:
         if word not in spamDic:
             uniqueWords = uniqueWords + 1
 
     uniqueWords = uniqueWords + len(spamDic)
-    # print("uniqueword :", uniqueWords)   
-    # print("hamDic: ", len(hamDic))
-    # print("spamDic: ", len(spamDic))
     for length in hamDic:
         hamLen = hamLen + hamDic[length]
         
@@ -103,18 +93,15 @@ def bagsProbabilty(hamDic, spamDic, hamCounter, spamCounter):
         dataStr = ""
         if data not in hamDic:
             temp = smoothing / (hamLen + (uniqueWords * smoothing))
-            dataStr = dataStr + data +"  "+str(spamDic[data])+ "  "+str(spamProb[data])+ "  " + "0" + "  " + str(temp)
+            dataStr = dataStr + data+ "  " + "0" + "  " + str(temp) +"  "+str(spamDic[data])+ "  "+str(spamProb[data])
             moduleArray.append(dataStr) 
     
-    # print("total data set: ",len(moduleArray) )
     for i, data in enumerate(moduleArray):
         j = i + 1
         result = str(j) + "  " + data
         moduleFile.write(result+"\n")
 
     moduleFile.close()
-    # print("hamPRob: ", hamProb)
-    # print("spamProb: ", spamProb)
     testModule(hamProb, spamProb, hamCounter, spamCounter, totalFiles, spamLen, hamLen, uniqueWords)
 
     
@@ -123,66 +110,111 @@ def testModule(hamProb, spamProb, hamCounter, spamCounter, totalFiles, spamLen, 
     files = os.listdir(your_path)
     testResult = []
     testFileCounter = 0
+    testHamCount = 0
+    testSpamCount = 0
+    correctHam = 0
+    correctSpam = 0
+    
 
     for file in files:
         testFileCounter = testFileCounter + 1
-        # print(file)
         spamFileProb = 0 
         hamFileProb = 0 
-        # print("spamLen", spamLen)
         spamFileProb = spamFileProb + math.log10(spamCounter/totalFiles)
         hamFileProb = hamFileProb + math.log10(hamCounter/totalFiles)
-        # print("spamFileProb", spamFileProb)
-        # print("hamFileProb", hamFileProb)
-
+           
         if "txt" in file:
-            # print("yes")
-            # hamCounter = hamCounter + 1
-            f=open(os.path.join(your_path,file),'r')
+
+            # f=open(os.path.join(your_path,file),'r')
+            f=open(os.path.join(your_path,file),'r',encoding="utf8", errors="surrogateescape")
             for line in f:
                 line = re.sub('[^a-z\s]+',' ',line, flags=re.IGNORECASE)
                 line = re.sub('(\s+)',' ',line)
                 line = re.split(' ',line)
-                # print(line)
                 for word in line:
                     if word in hamProb:
-                        # print(word," is ", y)
                         hamFileProb = hamFileProb + math.log10(hamProb[word])
-                    else:
-                        hamX = 0.5 / (hamLen + (uniqueWords * 0.5))
-                        hamFileProb = hamFileProb + math.log10(hamX)
+                    # else:
+                    #     hamX = 0.5 / (hamLen + (uniqueWords * 0.5))
+                    #     hamFileProb = hamFileProb + math.log10(hamX)
 
                     if word in spamProb:
-                        # print(word, "is ", math.log10(spamProb[word]))
                         spamFileProb = spamFileProb + math.log10(spamProb[word])
-                    else:
-                        spamX = 0.5 / (spamLen + (uniqueWords * 0.5))
-                        # print(word, "is ", math.log10(spamX))
-                        spamFileProb = spamFileProb + math.log10(spamX)
+                    # else:
+                    #     spamX = 0.5 / (spamLen + (uniqueWords * 0.5))
+                    #     spamFileProb = spamFileProb + math.log10(spamX)
 
                 # print(result)        
                                  
             f.close()    
-        # print("hamfilePRob:", hamFileProb)
-        # print("spamFileProb:", spamFileProb)    
+      
         fileStatus = ""
         flag = ""
-        if hamFileProb > spamFileProb:
-            fileStatus = "ham"
-            flag = "right"
-        else:
-            fileStatus = "spam"
-            flag = "wrong"
+        status = ""
 
-        result = file + "  " + fileStatus + "  " +str(round(hamFileProb, 5)) + "  " + str(round(spamFileProb,5)) + "  "+ "ham" + "  " + flag
+        
+        if hamFileProb > spamFileProb:
+            flag = "ham"
+        else:
+            flag = "spam"
+
+        if "ham" in file:
+            testHamCount = testHamCount + 1
+            fileStatus = "ham"
+            if flag == "ham":
+                correctHam = correctHam + 1
+        else:
+            testSpamCount = testSpamCount + 1 
+            fileStatus = "spam"
+            if flag == "spam":
+                correctSpam = correctSpam + 1
+
+        if fileStatus == flag :
+            status = "right"
+        else:
+            status = "wrong"
+
+        result = file + "  " + flag+ "  " +str(round(hamFileProb, 5)) + "  " + str(round(spamFileProb,5)) + "  "+ fileStatus + "  " + status
         testResult.append(result)
 
     outputFile = open("./data/output/result.txt", "w+")
     for i, data in enumerate(testResult):
         j = i + 1
-        # print(str(j)+ "  " + data)
+        print(str(j)+ "  " + data+"\n")
         outputFile.write(str(j)+ "  " + data+"\n")
 
-    outputFile.close()    
+    outputFile.close() 
+
+    hamAccuracy =  ( correctHam/ testHamCount) * 100
+    spamAccuracy = ( correctSpam/ testSpamCount) * 100
+
+    
+    print("correctHam: ", correctHam)
+    print("correctSpam: ", correctSpam)
+    print("testHamCount: ", testHamCount)
+    print("testSpamCount: ", testSpamCount)
+
+    print("hamAccuracy: ", hamAccuracy)
+    print("spamAccuracy: ", spamAccuracy)
+
+
+    hamPercision = correctHam / (correctHam + (testSpamCount - correctSpam))
+    hamRecall = correctHam / (correctHam + (testHamCount - correctHam))
+
+    print("hamPercision: ", hamPercision)
+    print("hamRecall: ", hamRecall)
+
+    spamPercision = correctSpam / (correctSpam + (testHamCount - correctHam))
+    spamRecall = correctSpam / (correctSpam + (testSpamCount - correctSpam))
+
+    print("spamPercision: ", spamPercision)
+    print("spamRecall: ", spamRecall)
+
+    # consider beta = 1
+    hamFmeasure =  2 * (hamPercision * hamRecall) / (hamPercision + hamRecall)
+    spamFmeasure =  2 * (spamPercision * spamRecall) / (spamPercision + spamRecall)
+    print("hamFmeasure: ", hamFmeasure)
+    print("spamFmeasure: ", spamFmeasure)
+
 
 main()
