@@ -1,14 +1,14 @@
 import os
 import collections
 import re
-import math
+import numpy as np
 
 def main():
     readFile()
 
 def readFile():
-    HamDict = {}
-    SpamDict = {}
+    hamDict = {}
+    spamDict = {}
     hamCounter =0
     spamCounter =0
     your_path = './data/train'
@@ -18,31 +18,25 @@ def readFile():
         if "ham" in file:
             hamCounter = hamCounter + 1
             f=open(os.path.join(your_path,file),'r',encoding="utf8", errors="surrogateescape")
-            # for line in f:
-            #     line = re.sub('[^a-z\s]+',' ',line, flags=re.IGNORECASE)
-            #     line = re.sub('(\s+)',' ',line)
-            #     line = re.split(' ',line)
+          
             hamTrainFile = []    
             word1 = re.split("[^a-zA-Z]", f.read())
             for word in word1:
                 if len(word) > 0:
                     hamTrainFile.append(word.lower())
 
-            for word in hamTrainFile:              
-                if word in HamDict:
-                    HamDict.update({word : HamDict[word] + 1})
+            for word in hamTrainFile:      
+                if word in hamDict:
+                    hamDict.update({word : hamDict[word] + 1})
                 else:
-                    HamDict[word] = 1
+                    hamDict[word] = 1
                         
             f.close()
 
         if "spam" in file:
             spamCounter = spamCounter + 1
             f=open(os.path.join(your_path,file),'r',encoding="utf8", errors="surrogateescape")
-            # for line in f:
-            #     line = re.sub('[^a-z\s]+',' ',line, flags=re.IGNORECASE)
-            #     line = re.sub('(\s+)',' ',line)
-            #     line = re.split(' ',line)
+
             spamTrainFile = []
             word1 = re.split("[^a-zA-Z]", f.read())
             for word in word1:
@@ -50,12 +44,13 @@ def readFile():
                     spamTrainFile.append(word.lower())
 
             for word in spamTrainFile:
-                if word in SpamDict:
-                    SpamDict.update({word : SpamDict[word] + 1})
+                if word in spamDict:
+                    spamDict.update({word : spamDict[word] + 1})
                 else:
-                    SpamDict[word] = 1
+                    spamDict[word] = 1
             f.close()
-    bagsProbabilty(HamDict,SpamDict,hamCounter, spamCounter)        
+
+    bagsProbabilty(sortData(hamDict),sortData(spamDict),hamCounter, spamCounter)        
 
 
 def bagsProbabilty(hamDic, spamDic, hamCounter, spamCounter):
@@ -106,7 +101,9 @@ def bagsProbabilty(hamDic, spamDic, hamCounter, spamCounter):
             dataStr = dataStr + str(spamDic[data]) + "  " + str(spamProb[data]) 
         else:
             temp = smoothing / (spamLen + (uniqueWords * smoothing))
-            dataStr = dataStr + "0" + "  " + str(temp)
+            spamDic.update({data : 0})
+            spamProb.update({data : temp})
+            dataStr = dataStr + str(spamDic[data]) + "  " + str(spamProb[data])
         moduleArray.append(dataStr)       
 
 
@@ -114,9 +111,11 @@ def bagsProbabilty(hamDic, spamDic, hamCounter, spamCounter):
         dataStr = ""
         if data not in hamDic:
             temp = smoothing / (hamLen + (uniqueWords * smoothing))
-            dataStr = dataStr + data+ "  " + "0" + "  " + str(temp) +"  "+str(spamDic[data])+ "  "+str(spamProb[data])
+            hamDic.update({data : 0})
+            hamProb.update({data : temp})
+            dataStr = dataStr + data+ "  " + str(hamDic[data]) + "  " + str(hamProb[data]) +"  "+str(spamDic[data])+ "  "+str(spamProb[data])
             moduleArray.append(dataStr) 
-    
+
     for i, data in enumerate(moduleArray):
         j = i + 1
         result = str(j) + "  " + data
@@ -141,8 +140,8 @@ def testModule(hamProb, spamProb, hamCounter, spamCounter, totalFiles, spamLen, 
         testFileCounter = testFileCounter + 1
         spamScore = 0 
         hamScore = 0 
-        spamScore = spamScore + math.log10(spamCounter/totalFiles)
-        hamScore = hamScore + math.log10(hamCounter/totalFiles)
+        spamScore = spamScore + np.log(spamCounter/totalFiles)
+        hamScore = hamScore + np.log(hamCounter/totalFiles)
         fileWords = []
            
         if "txt" in file:
@@ -157,10 +156,10 @@ def testModule(hamProb, spamProb, hamCounter, spamCounter, totalFiles, spamLen, 
 
             for word in fileWords:
                 if word in hamProb:
-                    hamScore = hamScore + math.log10(hamProb[word])
+                    hamScore = hamScore + np.log(hamProb[word])
             
                 if word in spamProb:
-                    spamScore = spamScore + math.log10(spamProb[word])
+                    spamScore = spamScore + np.log(spamProb[word])
                                     
             f.close()          
         
@@ -190,7 +189,7 @@ def testModule(hamProb, spamProb, hamCounter, spamCounter, totalFiles, spamLen, 
         else:
             status = "wrong"
 
-        result = file + "  " + flag+ "  " +str(round(hamScore, 5)) + "  " + str(round(spamScore,5)) + "  "+ fileStatus + "  " + status
+        result = file + "  " + flag+ "  " +str(hamScore) + "  " + str(spamScore) + "  "+ fileStatus + "  " + status
         testResult.append(result)
 
     outputFile = open("./data/output/result.txt", "w+")
@@ -200,6 +199,7 @@ def testModule(hamProb, spamProb, hamCounter, spamCounter, totalFiles, spamLen, 
         outputFile.write(str(j)+ "  " + data+"\n")
 
     outputFile.close() 
+
 
     hamAccuracy =  ( correctHam/ testHamCount) * 100
     spamAccuracy = ( correctSpam/ testSpamCount) * 100
@@ -228,6 +228,35 @@ def testModule(hamProb, spamProb, hamCounter, spamCounter, totalFiles, spamLen, 
     spamFmeasure =  2 * (spamPercision * spamRecall) / (spamPercision + spamRecall)
     print("hamFmeasure: ", hamFmeasure)
     print("spamFmeasure: ", spamFmeasure)
+
+    
+    hamArr = [["","__","___","__","__","__","__","",""],["|", " ", "   ", " ", "|"," ", "   ", " ", "|"], [ "|", " ",correctHam, " ", "|", "  ", testSpamCount - correctSpam, " ", "|"],["|","__","__","__","","__","__","_","|"],["|", " ", "   ", " ", "|"," ", "   ", " ", "|"], [ "|", "  ",testHamCount - correctHam, "  ", "|", "  ", 0, "  ", "|"],["|","__","__","_","|","__","__","_","|"]]
+
+    
+    spamArr = [["","__","___","__","__","__","__","",""],["|", " ", "   ", " ", "|"," ", "   ", " ", "|"], [ "|", " ",correctSpam, " ", "|", "  ",testHamCount - correctHam, "  ", "|"],["|","__","__","__","","__","__","_","|"],["|", " ", "   ", " ", "|"," ", "   ", " ", "|"], [ "|", "  ",testSpamCount - correctSpam, " ", "|", "  ", 0, "  ", "|"],["|","__","__","_","|","__","__","_","|"]]
+    # print(hamArr)
+
+    print("Ham confusion Matrix")
+    print("--------------------")
+    for row in hamArr:
+        for elem in row:
+            print(elem, end=' ')
+        print()
+    print("\n")
+
+    print("Spam confusion Matrix")
+    print("-------------------=-")
+    for row in spamArr:
+        for elem in row:
+            print(elem, end=' ')
+        print()
+
+def sortData(dic):
+    sortDic = {}
+    for key in sorted(dic):
+        sortDic.update({key : dic[key]})
+    return sortDic 
+
 
 
 main()
