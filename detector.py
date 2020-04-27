@@ -68,7 +68,7 @@ def bagsProbabilty(hamDic, spamDic, hamCounter, spamCounter):
         if word not in spamDic:
             uniqueWords = uniqueWords + 1
 
-    print("training set vocabulary", uniqueWords)
+    # print("training set vocabulary", uniqueWords)
     
 
     # find total word frequence in ham dictionary
@@ -79,8 +79,8 @@ def bagsProbabilty(hamDic, spamDic, hamCounter, spamCounter):
     for freq in spamDic:
         spamLen = spamLen + spamDic[freq]
 
-    print("Total word frq in ham :", hamLen)
-    print("Total word frq in spam :", spamLen)
+    # print("Total word frq in ham :", hamLen)
+    # print("Total word frq in spam :", spamLen)
 
     # p(word | ham)
     for i in hamDic:
@@ -207,11 +207,13 @@ def testModule(hamProb, spamProb, hamCounter, spamCounter, totalFiles, spamLen, 
     
     print("predicted correct ham: ", correctHam)
     print("predicted correct spam: ", correctSpam)
-    print("total ham in test file: ", testHamCount)
-    print("total spam in test file: ", testSpamCount)
+    # print("total ham in test file: ", testHamCount)
+    # print("total spam in test file: ", testSpamCount)
 
     print("ham Accuracy: ", hamAccuracy)
     print("spam Accuracy: ", spamAccuracy)
+
+    print("Total Accuracy of a model: ", ((correctHam + correctSpam)/ testFileCounter) * 100)
 
     hamPercision = correctHam / (correctHam + (testSpamCount - correctSpam))
     hamRecall = correctHam / (correctHam + (testHamCount - correctHam))
